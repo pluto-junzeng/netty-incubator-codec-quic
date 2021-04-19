@@ -909,5 +909,11 @@
       <version>2.22.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.netty.incubator</groupId>
+      <artifactId>netty-incubator-codec-quic</artifactId>
+      <version>0.0.10.Final</version>
+      <classifier>windows-x86_64</classifier>
+    </dependency>
   </dependencies>
 </project>

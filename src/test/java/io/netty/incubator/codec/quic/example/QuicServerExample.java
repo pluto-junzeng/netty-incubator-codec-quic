@@ -50,7 +50,7 @@ public final class QuicServerExample {
         QuicSslContext context = QuicSslContextBuilder.forServer(
                 selfSignedCertificate.privateKey(), null, selfSignedCertificate.certificate())
                 .applicationProtocols("http/0.9").build();
-        NioEventLoopGroup group = new NioEventLoopGroup(1);
+        NioEventLoopGroup group = new NioEventLoopGroup(1); // boss group，这里好像没有些work线程，只有boss
         ChannelHandler codec = new QuicServerCodecBuilder().sslContext(context)
                 .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)
                 // Configure some limits for the maximal number of streams (and the data) that we want to handle.
@@ -62,6 +62,7 @@ public final class QuicServerExample {
 
                 // Setup a token handler. In a production system you would want to implement and provide your custom
                 // one.
+                // token验证器
                 .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
                 // ChannelHandler that is added into QuicChannel pipeline.
                 .handler(new ChannelInboundHandlerAdapter() {
@@ -98,6 +99,7 @@ public final class QuicServerExample {
                                         ByteBuf buffer = ctx.alloc().directBuffer();
                                         buffer.writeCharSequence("Hello World!\r\n", CharsetUtil.US_ASCII);
                                         // Write the buffer and shutdown the output by writing a FIN.
+                                        // 写入buffer，以及关闭流
                                         ctx.writeAndFlush(buffer).addListener(QuicStreamChannel.SHUTDOWN_OUTPUT);
                                     }
                                 } finally {
@@ -110,9 +112,11 @@ public final class QuicServerExample {
         try {
             Bootstrap bs = new Bootstrap();
             Channel channel = bs.group(group)
-                    .channel(NioDatagramChannel.class)
-                    .handler(codec)
-                    .bind(new InetSocketAddress(9999)).sync().channel();
+                    .channel(NioDatagramChannel.class) // chanenl的类型
+                    .handler(codec) // 编码器的类型，这里还差一个解码器的类型
+                    .bind(new InetSocketAddress(9999)).sync().channel(); //绑定端口，等待服务进来
+            // 此时服务已经正常开启了
+            LOGGER.info("Server start listen at ", 9999);
             channel.closeFuture().sync();
         } finally {
             group.shutdownGracefully();
